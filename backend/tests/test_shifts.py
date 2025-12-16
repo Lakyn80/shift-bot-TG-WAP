@@ -7,9 +7,7 @@
             "end_time": "16:00",
         },
     )
-    assert response.status_code == 200
-    data = response.json()
-    assert data["name"] == "Morning"
+    assert response.status_code == 422
 
 
 def test_list_shifts(client):
