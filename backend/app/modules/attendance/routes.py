@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Header
+from fastapi import APIRouter, Depends, HTTPException, Header, Response
 from sqlalchemy.orm import Session
 
 from app.db.deps import get_db
@@ -34,3 +34,44 @@ def manual_edit_attendance(
         raise HTTPException(status_code=403, detail="Forbidden")
 
     return service.manual_update(db, attendance_id, payload)
+
+
+@router.get("/export/csv")
+def export_attendance_csv(
+    db: Session = Depends(get_db),
+    x_user_id: str = Header(...),
+):
+    user = db.query(User).filter(User.id == int(x_user_id)).first()
+
+    if not user or user.role.value not in ("manager", "admin"):
+        raise HTTPException(status_code=403, detail="Forbidden")
+
+    csv_data = service.export_csv(db)
+
+    return Response(content=csv_data, media_type="text/csv")
+
+
+@router.get("/hours/daily")
+def attendance_hours_daily(
+    db: Session = Depends(get_db),
+    x_user_id: str = Header(...),
+):
+    user = db.query(User).filter(User.id == int(x_user_id)).first()
+
+    if not user or user.role.value not in ("manager", "admin"):
+        raise HTTPException(status_code=403, detail="Forbidden")
+
+    return service.calculate_daily_hours(db)
+
+
+@router.get("/hours/monthly")
+def attendance_hours_monthly(
+    db: Session = Depends(get_db),
+    x_user_id: str = Header(...),
+):
+    user = db.query(User).filter(User.id == int(x_user_id)).first()
+
+    if not user or user.role.value not in ("manager", "admin"):
+        raise HTTPException(status_code=403, detail="Forbidden")
+
+    return service.calculate_monthly_hours(db)

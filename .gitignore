@@ -1,36 +1,6 @@
-# ==== Python ====
 __pycache__/
 *.pyc
-*.pyo
-*.pyd
-
-# ==== Virtual env ====
-.venv/
-venv/
-
-# ==== Environment variables ====
-.env
-.env.*
-*.env
-
-# ==== Databases ====
-*.sqlite
-*.db
-
-# ==== Pytest ====
+.coverage
 .pytest_cache/
-
-# ==== Mypy / Ruff / etc ====
-.mypy_cache/
-.ruff_cache/
-
-# ==== Logs ====
-*.log
-
-# ==== Editors ====
-.vscode/
-.idea/
-
-# ==== OS ====
-.DS_Store
-Thumbs.db
+.env
+.venv/

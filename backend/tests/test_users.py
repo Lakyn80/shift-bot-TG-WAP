@@ -21,7 +21,7 @@ def test_create_user_inactive(client):
         json={
             "full_name": "Inactive User",
             "role": "employee",
-            "telegram_id": "999",
+            "telegram_id": "999_inactive",
             "whatsapp_id": None,
             "is_active": False,
         },
