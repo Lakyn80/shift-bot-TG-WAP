@@ -16,3 +16,11 @@ class AttendanceRead(BaseModel):
 
     class Config:
         from_attributes = True
+from typing import Optional
+from datetime import datetime
+from pydantic import BaseModel
+
+
+class AttendanceUpdate(BaseModel):
+    check_in: Optional[datetime] = None
+    check_out: Optional[datetime] = None

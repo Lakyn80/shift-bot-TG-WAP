@@ -7,12 +7,13 @@ from app.modules.shifts.models import Shift
 
 
 def check_in(db: Session, payload):
-    # načti shift
     shift = db.query(Shift).filter(Shift.id == payload.shift_id).first()
     if not shift:
         raise HTTPException(status_code=404, detail="Shift not found")
 
-    # zákaz dvojitého check-inu
+    if shift.max_workers is None:
+        raise HTTPException(status_code=500, detail="Shift max_workers not set")
+
     existing = (
         db.query(Attendance)
         .filter(
@@ -25,7 +26,6 @@ def check_in(db: Session, payload):
     if existing:
         raise HTTPException(status_code=409, detail="User already checked in")
 
-    # ⛔ KONTROLA MAX_WORKERS
     active_count = (
         db.query(Attendance)
         .filter(
@@ -34,6 +34,7 @@ def check_in(db: Session, payload):
         )
         .count()
     )
+
     if active_count >= shift.max_workers:
         raise HTTPException(status_code=409, detail="Shift capacity full")
 
@@ -66,6 +67,21 @@ def check_out(db: Session, attendance_id: int):
         )
 
     attendance.check_out = datetime.utcnow()
+    db.commit()
+    db.refresh(attendance)
+    return attendance
+def manual_update(db: Session, attendance_id: int, data):
+    attendance = db.query(Attendance).filter(Attendance.id == attendance_id).first()
+
+    if not attendance:
+        raise HTTPException(status_code=404, detail="Attendance not found")
+
+    if data.check_in is not None:
+        attendance.check_in = data.check_in
+
+    if data.check_out is not None:
+        attendance.check_out = data.check_out
+
     db.commit()
     db.refresh(attendance)
     return attendance
