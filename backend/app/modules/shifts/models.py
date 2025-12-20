@@ -1,29 +1,21 @@
-from sqlalchemy import Date, Time, String, Enum, Integer
-from sqlalchemy.orm import Mapped, mapped_column
-import enum
+﻿from sqlalchemy import Column, Integer, Date, Time, String
+from sqlalchemy.orm import relationship
 
 from app.db.base import Base
-
-
-class ShiftStatus(enum.Enum):
-    open = "open"
-    full = "full"
-    cancelled = "cancelled"
-    closed = "closed"
 
 
 class Shift(Base):
     __tablename__ = "shifts"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
+    id = Column(Integer, primary_key=True, index=True)
 
-    date: Mapped[str] = mapped_column(Date)
-    start_time: Mapped[str] = mapped_column(Time)
-    end_time: Mapped[str] = mapped_column(Time)
+    name = Column(String, nullable=False)
 
-    location: Mapped[str] = mapped_column(String(100))
-    max_workers: Mapped[int] = mapped_column(Integer)
+    date = Column(Date, nullable=False)
+    start_time = Column(Time, nullable=False)
+    end_time = Column(Time, nullable=False)
 
-    status: Mapped[ShiftStatus] = mapped_column(
-        Enum(ShiftStatus), default=ShiftStatus.open
-    )
+    location = Column(String, nullable=True)
+    max_workers = Column(Integer, nullable=False, default=1)
+
+    assignments = relationship("ShiftAssignment", back_populates="shift")

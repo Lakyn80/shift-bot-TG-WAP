@@ -1,21 +1,14 @@
-from pydantic import BaseModel
 from datetime import date, time
-from enum import Enum
-
-
-class ShiftStatus(str, Enum):
-    open = "open"
-    full = "full"
-    cancelled = "cancelled"
-    closed = "closed"
+from pydantic import BaseModel
 
 
 class ShiftBase(BaseModel):
+    name: str
     date: date
     start_time: time
     end_time: time
-    location: str
-    max_workers: int
+    location: str | None = None
+    max_workers: int | None = None
 
 
 class ShiftCreate(ShiftBase):
@@ -24,7 +17,6 @@ class ShiftCreate(ShiftBase):
 
 class ShiftRead(ShiftBase):
     id: int
-    status: ShiftStatus
 
     class Config:
         from_attributes = True

@@ -1,16 +1,15 @@
-from sqlalchemy import ForeignKey, UniqueConstraint
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import Column, Integer, ForeignKey
+from sqlalchemy.orm import relationship
 
 from app.db.base import Base
 
 
 class ShiftAssignment(Base):
     __tablename__ = "shift_assignments"
-    __table_args__ = (
-        UniqueConstraint("shift_id", "user_id", name="uq_shift_user"),
-    )
 
-    id: Mapped[int] = mapped_column(primary_key=True)
+    id = Column(Integer, primary_key=True, index=True)
 
-    shift_id: Mapped[int] = mapped_column(ForeignKey("shifts.id"))
-    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    shift_id = Column(Integer, ForeignKey("shifts.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+
+    shift = relationship("Shift", back_populates="assignments")
