@@ -17,10 +17,12 @@ def check_in(db: Session, payload: AttendanceCheckIn):
 
     apply_all_rules(db, payload.user_id, shift)
 
+    check_in_time = datetime.combine(shift.date, shift.start_time)
+
     attendance = Attendance(
         user_id=payload.user_id,
         shift_id=payload.shift_id,
-        check_in=datetime.utcnow(),
+        check_in=check_in_time,
     )
     db.add(attendance)
     db.commit()
@@ -33,7 +35,14 @@ def check_out(db: Session, attendance_id: int):
     if not attendance:
         raise ValueError("Attendance not found")
 
-    attendance.check_out = datetime.utcnow()
+    if attendance.check_out is not None:
+        raise ValueError("Attendance already checked out")
+
+    shift = db.query(Shift).get(attendance.shift_id)
+    if not shift:
+        raise ValueError("Shift not found")
+
+    attendance.check_out = datetime.combine(shift.date, shift.end_time)
     db.commit()
     db.refresh(attendance)
     return attendance
@@ -52,21 +61,42 @@ def manual_edit(db: Session, attendance_id: int, payload: AttendanceManualEdit):
     return attendance
 
 
-def hours_daily(db: Session):
-    rows = db.query(Attendance).filter(Attendance.check_out.isnot(None)).all()
+# =========================
+# REPORTS
+# =========================
+
+def calculate_daily_hours(db: Session, user_id: int | None = None):
+    q = db.query(Attendance).filter(Attendance.check_out.isnot(None))
+
+    if user_id is not None:
+        q = q.filter(Attendance.user_id == user_id)
 
     total_hours = 0.0
-    for a in rows:
+    for a in q.all():
         total_hours += (a.check_out - a.check_in).total_seconds() / 3600
 
     return {"total_hours": total_hours}
 
 
-def hours_monthly(db: Session):
-    rows = db.query(Attendance).filter(Attendance.check_out.isnot(None)).all()
+def calculate_monthly_hours(
+    db: Session,
+    user_id: int | None = None,
+    from_date=None,
+    to_date=None,
+):
+    q = db.query(Attendance).filter(Attendance.check_out.isnot(None))
+
+    if user_id is not None:
+        q = q.filter(Attendance.user_id == user_id)
+
+    if from_date is not None:
+        q = q.filter(Attendance.check_in >= from_date)
+
+    if to_date is not None:
+        q = q.filter(Attendance.check_out <= to_date)
 
     total_hours = 0.0
-    for a in rows:
+    for a in q.all():
         total_hours += (a.check_out - a.check_in).total_seconds() / 3600
 
     return {"total_hours": total_hours}
@@ -89,3 +119,19 @@ def export_csv(db: Session):
         ])
 
     return output.getvalue()
+
+
+# Backwards-compatibility aliases expected by routes/tests
+def hours_daily(db: Session):
+    return calculate_daily_hours(db)
+
+
+def hours_monthly(
+    db: Session,
+    user_id: int | None = None,
+    from_date=None,
+    to_date=None,
+):
+    return calculate_monthly_hours(
+        db, user_id=user_id, from_date=from_date, to_date=to_date
+    )

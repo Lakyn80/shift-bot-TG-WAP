@@ -1,4 +1,5 @@
-﻿from datetime import datetime, timedelta, date
+import os
+from datetime import date, datetime, timedelta
 from sqlalchemy.orm import Session
 
 from app.modules.attendance.models import Attendance
@@ -16,8 +17,25 @@ class AttendanceRules:
     ENABLE_OVERLAP_CHECK = True
 
     MAX_HOURS_PER_DAY = 8
-    MAX_HOURS_PER_WEEK = 40
+    MAX_HOURS_PER_WEEK = 48
     MIN_REST_HOURS = 11
+
+
+# ======================================================
+# CONFIG
+# ======================================================
+def _env_flag(key: str, default: bool) -> bool:
+    value = os.getenv(key)
+    if value is None:
+        return default
+    return value.lower() == "true"
+
+
+def refresh_rule_flags():
+    AttendanceRules.ENABLE_DAILY_LIMIT = _env_flag("ATT_ENABLE_DAILY_LIMIT", True)
+    AttendanceRules.ENABLE_WEEKLY_LIMIT = _env_flag("ATT_ENABLE_WEEKLY_LIMIT", True)
+    AttendanceRules.ENABLE_MIN_REST = _env_flag("ATT_ENABLE_MIN_REST", True)
+    AttendanceRules.ENABLE_OVERLAP_CHECK = _env_flag("ATT_ENABLE_OVERLAP_CHECK", True)
 
 
 # ======================================================
@@ -37,10 +55,12 @@ def _shift_hours(shift: Shift) -> float:
 
 
 # ======================================================
-# RULE ORCHESTRATOR (OČEKÁVANÝ TESTY)
+# RULE ORCHESTRATOR (EXPECTED BY TESTS)
 # ======================================================
 def apply_all_rules(db: Session, user_id: int, shift: Shift):
+    refresh_rule_flags()
     check_no_duplicate_checkin(db, user_id)
+    check_shift_capacity(db, shift)
     check_max_hours_per_day(db, user_id, shift)
     check_max_hours_per_week(db, user_id, shift)
     check_min_rest_between_shifts(db, user_id, shift)
@@ -60,6 +80,22 @@ def check_no_duplicate_checkin(db: Session, user_id: int):
     )
     if open_att:
         raise RuleViolation("Already checked in")
+
+
+def check_shift_capacity(db: Session, shift: Shift):
+    if shift.max_workers is None:
+        return
+
+    current_count = (
+        db.query(Attendance)
+        .filter(
+            Attendance.shift_id == shift.id,
+            Attendance.check_out.is_(None),
+        )
+        .count()
+    )
+    if current_count >= shift.max_workers:
+        raise RuleViolation("Shift capacity reached")
 
 
 def check_max_hours_per_day(db: Session, user_id: int, new_shift: Shift):
