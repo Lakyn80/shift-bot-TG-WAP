@@ -11,7 +11,7 @@ from app.modules.rules.service import apply_all_rules
 
 
 def check_in(db: Session, payload: AttendanceCheckIn):
-    shift = db.query(Shift).get(payload.shift_id)
+    shift = db.get(Shift, payload.shift_id)
     if not shift:
         raise ValueError("Shift not found")
 
@@ -31,14 +31,14 @@ def check_in(db: Session, payload: AttendanceCheckIn):
 
 
 def check_out(db: Session, attendance_id: int):
-    attendance = db.query(Attendance).get(attendance_id)
+    attendance = db.get(Attendance, attendance_id)
     if not attendance:
         raise ValueError("Attendance not found")
 
     if attendance.check_out is not None:
         raise ValueError("Attendance already checked out")
 
-    shift = db.query(Shift).get(attendance.shift_id)
+    shift = db.get(Shift, attendance.shift_id)
     if not shift:
         raise ValueError("Shift not found")
 
@@ -49,7 +49,7 @@ def check_out(db: Session, attendance_id: int):
 
 
 def manual_edit(db: Session, attendance_id: int, payload: AttendanceManualEdit):
-    attendance = db.query(Attendance).get(attendance_id)
+    attendance = db.get(Attendance, attendance_id)
     if not attendance:
         raise ValueError("Attendance not found")
 

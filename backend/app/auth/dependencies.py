@@ -32,7 +32,7 @@ def get_current_user(
             )
 
     if x_user_id:
-        user = db.query(User).get(int(x_user_id))
+        user = db.get(User, int(x_user_id))
         if user:
             return {
                 "user_id": user.id,
