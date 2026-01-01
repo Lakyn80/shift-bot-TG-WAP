@@ -1,6 +1,7 @@
 ﻿from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
+from app.auth.router import router as auth_router
 from app.modules.rules.service import RuleViolation
 
 from app.modules.users.routes import router as users_router
@@ -9,7 +10,10 @@ from app.modules.attendance.routes import router as attendance_router
 from app.modules.notifications.routes import router as notifications_router
 from app.modules.reports.routes import router as reports_router
 
-app = FastAPI()
+app = FastAPI(
+    title="Shift API",
+    swagger_ui_init_oauth={"usePkceWithAuthorizationCodeGrant": False},
+)
 
 # globální handler pro porušení pravidel
 @app.exception_handler(RuleViolation)
@@ -20,6 +24,7 @@ async def rule_violation_handler(request: Request, exc: RuleViolation):
     )
 
 # DŮLEŽITÉ: žádné prefixy tady, prefixy jsou definované v routerech
+app.include_router(auth_router)
 app.include_router(users_router)
 app.include_router(shifts_router)
 app.include_router(attendance_router)

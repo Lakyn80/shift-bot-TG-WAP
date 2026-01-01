@@ -1,6 +1,7 @@
-﻿from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
+from app.auth.dependencies import require_role
 from app.db.deps import get_db
 from app.modules.attendance import service as attendance_service
 
@@ -11,6 +12,7 @@ router = APIRouter(prefix="/reports", tags=["reports"])
 def report_daily_hours(
     user_id: int | None = Query(default=None),
     db: Session = Depends(get_db),
+    _=Depends(require_role("admin")),
 ):
     data = attendance_service.calculate_daily_hours(db, user_id=user_id)
 
@@ -32,6 +34,7 @@ def report_monthly_hours(
     from_date=None,
     to_date=None,
     db: Session = Depends(get_db),
+    _=Depends(require_role("admin")),
 ):
     data = attendance_service.calculate_monthly_hours(
         db,

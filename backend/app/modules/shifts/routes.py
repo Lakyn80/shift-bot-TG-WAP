@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
+from app.auth.dependencies import get_current_user, require_role
 from app.db.deps import get_db
 from app.modules.shifts import schemas, service
 from app.modules.shifts.schemas_assignment import (
@@ -16,6 +17,7 @@ router = APIRouter(prefix="/shifts", tags=["shifts"])
 def create_shift(
     payload: schemas.ShiftCreate,
     db: Session = Depends(get_db),
+    _=Depends(require_role("admin", "manager")),
 ):
     return service.create_shift(db, payload)
 
@@ -23,6 +25,7 @@ def create_shift(
 @router.get("/", response_model=list[schemas.ShiftRead])
 def list_shifts(
     db: Session = Depends(get_db),
+    _=Depends(get_current_user),
 ):
     return service.list_shifts(db)
 
@@ -31,6 +34,7 @@ def list_shifts(
 def assign_user(
     payload: ShiftAssignmentCreate,
     db: Session = Depends(get_db),
+    _=Depends(require_role("admin", "manager")),
 ):
     try:
         return service.assign_user_to_shift(

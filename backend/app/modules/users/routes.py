@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
+from app.auth.dependencies import require_role
 from app.db.deps import get_db
 from app.modules.users import schemas, service
 
@@ -11,6 +12,7 @@ router = APIRouter(prefix="/users", tags=["users"])
 def create_user(
     payload: schemas.UserCreate,
     db: Session = Depends(get_db),
+    _=Depends(require_role("admin")),
 ):
     return service.create_user(db, payload)
 
@@ -18,5 +20,6 @@ def create_user(
 @router.get("/", response_model=list[schemas.UserRead])
 def list_users(
     db: Session = Depends(get_db),
+    _=Depends(require_role("admin")),
 ):
     return service.get_users(db)
