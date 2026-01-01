@@ -1,38 +1,19 @@
 from datetime import timedelta
 
-from fastapi import APIRouter, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import ValidationError
+from sqlalchemy.orm import Session
 
 from app.auth.schemas import LoginRequest, TokenResponse
 from app.auth.security import create_access_token, verify_password
+from app.db.deps import get_db
+from app.modules.users.models import User
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
-# Temporary hardcoded users for initial wiring.
-# hash for password "admin123"
-HASHED_FAKE_PASSWORD = "$2b$12$EDyNrEiKKzTLc3sctZAZ5.1vn7RGf0bvY785.xHyAuWywwSIhY8Fq"
-
-FAKE_USERS = {
-    "admin": {
-        "password": HASHED_FAKE_PASSWORD,
-        "role": "admin",
-        "id": 1,
-    },
-    "manager": {
-        "password": HASHED_FAKE_PASSWORD,
-        "role": "manager",
-        "id": 2,
-    },
-    "employee": {
-        "password": HASHED_FAKE_PASSWORD,
-        "role": "employee",
-        "id": 3,
-    },
-}
-
 
 @router.post("/login", response_model=TokenResponse)
-async def login(request: Request):
+async def login(request: Request, db: Session = Depends(get_db)):
     try:
         if request.headers.get("content-type", "").startswith("application/json"):
             raw = await request.json()
@@ -46,15 +27,19 @@ async def login(request: Request):
             detail=e.errors(),
         )
 
-    user = FAKE_USERS.get(data.username)
-    if not user or not verify_password(data.password, user["password"]):
+    user: User | None = (
+        db.query(User).filter(User.full_name == data.username).first()
+    )
+    role_value = user.role.value if user and hasattr(user.role, "value") else None
+
+    if not user or not user.password_hash or not verify_password(data.password, user.password_hash):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
 
     token = create_access_token(
         data={
-            "sub": data.username,
-            "user_id": user["id"],
-            "role": user["role"],
+            "sub": user.full_name,
+            "user_id": user.id,
+            "role": role_value or user.role,
         },
         expires_delta=timedelta(hours=24),
     )
