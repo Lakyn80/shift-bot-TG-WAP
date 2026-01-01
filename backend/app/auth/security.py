@@ -5,7 +5,7 @@ from jose import jwt
 from passlib.context import CryptContext
 
 # NOTE: use an env var in production; this placeholder keeps tests/dev running.
-SECRET_KEY = os.getenv("JWT_SECRET_KEY", "CHANGE_ME_SECRET")
+SECRET_KEY = os.getenv("JWT_SECRET_KEY", "dev-secret")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24
 
