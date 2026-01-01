@@ -39,7 +39,7 @@ def check_out(
 @router.get("/export/csv")
 def export_csv(
     db: Session = Depends(get_db),
-    _=Depends(require_role("admin")),
+    _=Depends(require_role("admin", "manager")),
 ):
     csv_data = service.export_csv(db)
     return Response(

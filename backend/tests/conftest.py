@@ -1,4 +1,6 @@
-﻿import pytest
+import os
+
+import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -8,7 +10,6 @@ from app.main import app as fastapi_app
 from app.db.base import Base
 import app.db.base_models  # noqa
 from app.db.deps import get_db
-
 
 # === TEST DATABASE ENGINE (SQLite in-memory, thread-safe) ===
 SQLALCHEMY_DATABASE_URL = "sqlite+pysqlite://"
@@ -44,6 +45,8 @@ def db():
 
 @pytest.fixture(scope="function")
 def client(db):
+    os.environ["AUTH_TEST_MODE"] = "true"
+
     def override_get_db():
         try:
             yield db
