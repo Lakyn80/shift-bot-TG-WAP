@@ -100,7 +100,6 @@ Planned extensions:
 
 ---
 
-## Author
+## License
+MIT License © 2026 Lukiora
 
-Developed and maintained by Lukas Krumpach  
-Backend-focused Python developer
